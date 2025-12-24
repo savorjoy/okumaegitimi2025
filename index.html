@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dostluğun Dili - Final Etkinlik</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body, html { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        .bg-istanbul {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&q=80&w=1600') no-repeat center center;
+            background-size: cover; filter: blur(8px); z-index: -1; transform: scale(1.05);
+        }
+
+        .main-header { position: absolute; top: 30px; width: 100%; text-align: center; z-index: 10; }
+        .main-header-text {
+            background: rgba(255, 255, 255, 0.95); padding: 20px 50px; border-radius: 60px;
+            font-size: 26px; font-weight: 900; color: #1a252f; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 4px solid #3498db; display: inline-block; text-transform: uppercase;
+        }
+
+        .main-stage { display: flex; justify-content: center; align-items: center; height: 100vh; gap: 80px; }
+        
+        .char-wrapper { 
+            position: relative; height: 62vh; z-index: 1; 
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+            padding: 20px; border-radius: 30px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        .char-wrapper:hover { transform: translateY(-10px); }
+        .main-img { height: 90%; border-radius: 20px; border: 5px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .char-label { text-align: center; color: white; font-weight: 900; font-size: 24px; margin-top: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+        .click-area { position: absolute; cursor: pointer; z-index: 50; background: rgba(0,0,0,0); }
+        .p-btn { top: 20%; left: 10%; width: 40%; height: 35%; }
+        .v-btn { bottom: 10%; right: 10%; width: 50%; height: 35%; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
+        
+        .passport-book { background: #5d4037; width: 900px; height: 550px; margin: 5% auto; border-radius: 15px; border: 12px solid #4e342e; display: flex; position: relative; }
+        .p-page { flex: 1; background: #fdf5e6; padding: 30px; border: 1px solid #d4c4a8; display: flex; flex-direction: column; align-items: center; }
+        .p-photo-frame { width: 300px; background: white; border: 8px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        #p-name { margin-top: 15px; font-weight: 900; font-size: 28px; color: #333; text-transform: uppercase; }
+
+        .suitcase-container { background: #f4f1ea; width: 1100px; height: 700px; margin: 3% auto; border-radius: 30px; display: flex; position: relative; border: 8px solid #8d6e63; overflow: visible; }
+        
+        /* Çarpı Butonu Tam Köşeye Alındı */
+        .close-btn { 
+            position: absolute; 
+            right: -15px; 
+            top: -15px; 
+            font-size: 60px; 
+            cursor: pointer; 
+            z-index: 2005; 
+            color: #fff; /* Beyaz çarpı koyu fonda daha iyi görünür */
+            background: #e74c3c;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            line-height: 1; 
+        }
+        .close-btn:hover { background: #c0392b; transform: scale(1.1); }
+        
+        .suitcase-left { flex: 1.4; background: #efebe9; border-right: 5px dashed #8d6e63; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .suitcase-img-display { width: 90%; height: 80%; object-fit: contain; }
+        .inner-storage { position: absolute; bottom: 80px; width: 80%; height: 200px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+
+        .suitcase-right { flex: 1; display: flex; flex-direction: column; padding: 20px; background: #fff; position: relative; }
+        #v-right-title { text-align: center; color: #3498db; font-size: 17px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; padding-right: 40px; }
+        .items-source { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; overflow-y: auto; padding: 5px; }
+        
+        .drag-item { background: #fff; border: 3px solid #3498db; border-radius: 15px; padding: 10px; text-align: center; cursor: grab; display: flex; flex-direction: column; align-items: center; }
+        .drag-item img { width: 80px; height: 80px; pointer-events: none; }
+        .drag-item span { display: block; margin-top: 5px; font-size: 11px; font-weight: bold; pointer-events: none; }
+
+        .in-suitcase { width: 60px !important; height: 60px !important; border: none !important; background: transparent !important; }
+        .in-suitcase img { width: 55px !important; height: 55px !important; }
+        .in-suitcase span { display: none; }
+        .wrong { background: #e74c3c !important; animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% {transform:translateX(0)} 25% {transform:translateX(-8px)} 75% {transform:translateX(8px)} }
+    </style>
+</head>
+<body onclick="document.getElementById('bgMusic').play()">
+
+    <div class="bg-istanbul"></div>
+    <audio id="bgMusic" loop src="muzik.mp3"></audio>
+    <audio id="cheerSound" src="alkis.mp3"></audio>
+
+    <div class="main-header">
+        <div class="main-header-text">Karakterlerin pasaportlarını doldurun ve valizlerini hazırlamalarına yardım edin!</div>
+    </div>
+
+    <div class="main-stage">
+        <div class="char-wrapper">
+            <img src="leyla.png" class="main-img">
+            <div class="char-label">LEYLA</div>
+            <div class="click-area p-btn" onclick="openP('leyla')"></div>
+            <div class="click-area v-btn" onclick="openV('leyla')"></div>
+        </div>
+        <div class="char-wrapper">
+            <img src="andrey.png" class="main-img">
+            <div class="char-label">ANDREY</div>
+            <div class="click-area p-btn" onclick="openP('andrey')"></div>
+            <div class="click-area v-btn" onclick="openV('andrey')"></div>
+        </div>
+    </div>
+
+    <div id="pModal" class="modal">
+        <div class="passport-book">
+            <span class="close-btn" onclick="closeM('pModal')" style="right: -35px; top: -35px;">&times;</span>
+            <div class="p-page"><div class="p-photo-frame"><img id="p-img" style="width:100%"></div><div id="p-name"></div></div>
+            <div class="p-page" style="align-items:flex-start; padding-left:40px; padding-top:60px;">
+                <label style="font-size:22px; font-weight:800; color:#4e342e;">ÜLKE</label><input type="text" id="p-country" style="width:90%; padding:10px; border:none; border-bottom:2px dashed #8d6e63; background:transparent; font-size:18px;" oninput="saveP()">
+                <label style="font-size:22px; font-weight:800; color:#4e342e; margin-top:30px;">ÖZELLİKLER</label><textarea rows="6" id="p-traits" style="width:90%; padding:10px; border:none; border-bottom:2px dashed #8d6e63; background:transparent; font-size:18px;" oninput="saveP()"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="vModal" class="modal">
+        <div class="suitcase-container" id="vContainer">
+            <span class="close-btn" onclick="stopSuccess(); closeM('vModal')">&times;</span>
+            <div class="suitcase-left" id="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2 id="v-title" style="color:#5d4037; position:absolute; top:15px; font-size:30px; font-weight:900;"></h2>
+                <img id="v-main-img" class="suitcase-img-display">
+                <div id="storage" class="inner-storage"></div>
+            </div>
+            <div class="suitcase-right"><div id="v-right-title"></div><div class="items-source" id="source-zone"></div></div>
+        </div>
+    </div>
+
+    <script>
+        let currentOwner = ""; let correctCount = 0;
+        const pData = { leyla: { c: "", t: "" }, andrey: { c: "", t: "" } };
+        const items = [
+            { id: 'l1', name: 'MİSAFİRPERVERLİK', img: 'misafir.png', target: 'leyla' },
+            { id: 'l2', name: 'REHBERLİK', img: 'rehberlik.png', target: 'leyla' },
+            { id: 'l3', name: 'TÜRK KAHVESİ', img: 'kahve.png', target: 'leyla' },
+            { id: 'a1', name: 'TÜRKÇE SÖZLÜK', img: 'sozluk.png', target: 'andrey' },
+            { id: 'a2', name: 'TÜRK KİLİMİ', img: 'kilim.png', target: 'andrey' },
+            { id: 'a3', name: 'KAHVE FİNCANI', img: 'fincan.png', target: 'andrey' },
+            { id: 'f1', name: 'ELMA', img: 'elma.png', target: 'none' },
+            { id: 'f2', name: 'BİLGİSAYAR', img: 'bilgisayar.png', target: 'none' },
+            { id: 'f3', name: 'PATLAMIŞ MISIR', img: 'misir.png', target: 'none' },
+            { id: 'f4', name: 'ÇİÇEK BUKETİ', img: 'buket.png', target: 'none' },
+            { id: 'f5', name: 'ŞAPKA', img: 'sapka.png', target: 'none' },
+            { id: 'f6', name: 'FUTBOL TOPU', img: 'top.png', target: 'none' }
+        ];
+
+        function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+        function openP(c) { currentOwner = c; document.getElementById('p-img').src = 'pasaport' + (c=='leyla'?'1':'2') + '.png'; document.getElementById('p-name').innerText = c.toUpperCase(); document.getElementById('p-country').value = pData[c].c; document.getElementById('p-traits').value = pData[c].t; document.getElementById('pModal').style.display = 'block'; }
+        function saveP() { if(currentOwner) { pData[currentOwner].c = document.getElementById('p-country').value; pData[currentOwner].t = document.getElementById('p-traits').value; } }
+        
+        function openV(c) {
+            currentOwner = c; correctCount = 0; 
+            document.getElementById('v-title').innerText = c === 'leyla' ? "LEYLA'NIN VALİZİ" : "ANDREY'İN VALİZİ";
+            document.getElementById('v-main-img').src = 'valiz' + (c=='leyla'?'1':'2') + '.png';
+            document.getElementById('v-right-title').innerText = c === 'leyla' ? "Okuduğunuz metne göre Leyla'ya uygun olanları valize taşıyın!" : "Okuduğun metne göre Andrey'e uygun olanları valize taşıyın!";
+            const source = document.getElementById('source-zone'); const storage = document.getElementById('storage');
+            source.innerHTML = ""; storage.innerHTML = "";
+            const filtered = items.filter(i => (c === 'leyla' ? i.target !== 'andrey' : i.target !== 'leyla'));
+            shuffle([...filtered]).forEach(i => {
+                let div = document.createElement('div'); div.className = 'drag-item'; div.id = i.id + Math.random(); div.draggable = true;
+                div.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+                div.innerHTML = `<img src="${i.img}"><span>${i.name}</span>`; div.dataset.target = i.target; source.appendChild(div);
+            });
+            document.getElementById('vModal').style.display = 'block';
+        }
+        
+        function closeM(id) { document.getElementById(id).style.display = 'none'; }
+        function stopSuccess() { document.getElementById('cheerSound').pause(); document.getElementById('cheerSound').currentTime = 0; }
+        function allowDrop(e) { e.preventDefault(); }
+        
+        function drop(e) {
+            e.preventDefault(); let id = e.dataTransfer.getData("text"); let el = document.getElementById(id);
+            if (el.dataset.target === currentOwner) {
+                document.getElementById('storage').appendChild(el); el.classList.add('in-suitcase'); el.draggable = false;
+                correctCount++; 
+                if (correctCount === 3) {
+                    const rect = document.getElementById('vContainer').getBoundingClientRect();
+                    const opts = { particleCount: 100, spread: 60, ticks: 200, zIndex: 2000, gravity: 1 };
+                    confetti({ ...opts, origin: { x: rect.left / window.innerWidth, y: rect.bottom / window.innerHeight }, angle: 60 });
+                    confetti({ ...opts, origin: { x: rect.right / window.innerWidth, y: rect.bottom / window.innerHeight }, angle: 120 });
+                    document.getElementById('cheerSound').play();
+                }
+            } else { el.classList.add('wrong'); setTimeout(() => el.classList.remove('wrong'), 500); }
+        }
+    </script>
+</body>
+</html>
